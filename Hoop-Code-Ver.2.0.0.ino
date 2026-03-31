@@ -20,10 +20,11 @@ state currentState = nothingIn;
 
 //Calculation setup - Placeholder values
 const float dz = 1.347; //Distance variables
+unsigned long time_limit = 60000;//Operation time - sec*1000
 float x_0, x_1, y_0, y_1, dx, dy;
 float t_start, t_0, t_1, dt, t_last; //Time variables
-int t_press_1 = 0
-int t_press_2 = 0
+int t_press_1 = 0;
+int t_press_2 = 0;
 float ball_num=0;//Ball info variables
 double bpm;
 double bps;
@@ -38,6 +39,7 @@ void setup() {
   pinMode(irSensorPin_5, INPUT);
   pinMode(irSensorPin_6, INPUT);
   pinMode(irSensorPin_7, INPUT);
+  pinMode(ButtonPin, INPUT_PULLUP);
   lcd.init();                      
   lcd.backlight();
   lcd.setCursor(0,0);
@@ -53,6 +55,7 @@ void setup() {
   lcd.clear();
   lcd.print("Start!");
   t_last = millis();
+  t_start = millis();
 }
 
 void updateBPM() {
@@ -76,7 +79,7 @@ int new_ball() {
   lcd.print(" Balls");
   lcd.setCursor(0,1);
   lcd.print(V);
-  lcd.print("in/s"); //Inches per second, but can be made to m/s, but everything has to be converted.
+  lcd.print("cm/s"); //Inches per second, but can be made to m/s, but everything has to be converted.
   lcd.print(" | ");
   lcd.print(dt);
   return millis();
@@ -132,41 +135,52 @@ float IR_fin_check() {//checks for the back-most IR sensors
 }
 
 void loop() {
-  while((y_0 = (IR_init_check()) == 0)){
-    if (millis()>=t_last+5000) {
+  while(((IR_init_check()) == 0)){
+    /*if (millis()>=t_last+5000) {
       updateBPM();
-      if((digitalRead(ButtonPin) != 0)&&(t_press_1 == 0)){
-        t_press_1 = millis();
-      }
-      else if (digitalRead(ButtonPin) != 0)&&(millis >= t_press_1+50)){
-        t_press_1 = 0;
-        goto buttonlock;
-      }
-      else if (digitalRead(ButtonPin) != 0)&&(millis <= t_press_1+50)){
-        ;
-      }
-      else{
-        t_press_1 = 0;
-      }
+    }
+    if((digitalRead(ButtonPin) == 0)&&(t_press_1 == 0)){
+       t_press_1 = millis();
+    }
+    else if ((digitalRead(ButtonPin) == 0)&&(millis() >= t_press_1+500)){
+      t_press_1 = 0;
+      goto buttonlock;
+    }
+    else if ((digitalRead(ButtonPin) == 0)&&(millis() <= t_press_1+50)){
+      ;
+    }
+    else{
+      t_press_1 = 0;
+    }*/
+    if(millis()>=(t_start+time_limit)){
+      lcd.clear();
+      lcd.print(time_limit);
+      lcd.setCursor(0, 1);
+      lcd.print(millis());
+      delay(10000);
+      goto timeout;
     }
   }
   t_0 = millis();
   y_0 = IR_init_check();
   while(((IR_fin_check() == 0))&&(millis()<=t_0+300)){
     updateBPM();
-    if((digitalRead(ButtonPin) != 0)&&(t_press_1 == 0)){
+    /*if((digitalRead(ButtonPin) == LOW)&&(t_press_1 == 0)){
         t_press_1 = millis();
-      }
-      else if (digitalRead(ButtonPin) != 0)&&(millis >= t_press_1+50)){
-        t_press_1 = 0;
-        goto buttonlock;
-      }
-      else if (digitalRead(ButtonPin) != 0)&&(millis <= t_press_1+50)){
-        ;
-      }
-      else{
-        t_press_1 = 0;
-      }
+    }
+    else if ((digitalRead(ButtonPin) == LOW)&&(millis() >= t_press_1+50)){
+      t_press_1 = 0;
+      goto buttonlock;
+    }
+    else if ((digitalRead(ButtonPin) == LOW)&&(millis() <= t_press_1+50)){
+      ;
+    }
+    else{
+      t_press_1 = 0;
+    }*/
+    if(millis()>=t_start+time_limit){
+      goto timeout;
+    }
   }
   if(millis()<=t_0+301){
     t_1 = millis();
@@ -174,7 +188,7 @@ void loop() {
     ball_num++;
     dt = t_1-t_0;
     dy = y_1-y_0;
-    V = 1000*(sqrt(dy*dy + dz*dz))/dt;
+    V = (1000*(sqrt(dy*dy + dz*dz))/dt)*2.54;
     new_ball();
     t_last = millis();
   }
@@ -182,57 +196,66 @@ void loop() {
   while (((IR_fin_check() != 0)))
   {
     updateBPM();
-    if((digitalRead(ButtonPin) != 0)&&(t_press_1 == 0)){
-        t_press_1 = millis();
-      }
-      else if (digitalRead(ButtonPin) != 0)&&(millis >= t_press_1+50)){
-        t_press_1 = 0;
-        goto buttonlock;
-      }
-      else if (digitalRead(ButtonPin) != 0)&&(millis <= t_press_1+50)){
-        ;
-      }
-      else{
-        t_press_1 = 0;
-      }
+    /*if((digitalRead(ButtonPin) == LOW)&&(t_press_1 == 0)){
+      t_press_1 = millis();
+    }
+    else if ((digitalRead(ButtonPin) == LOW)&&(millis() >= t_press_1+50)){
+      t_press_1 = 0;
+      goto buttonlock;
+    }
+    else if ((digitalRead(ButtonPin) == LOW)&&(millis() <= t_press_1+50)){
+      ;
+    }
+    else{
+      t_press_1 = 0;
+    }*/
+    if(millis()>=t_start+time_limit){
+      goto timeout;
+    }
   }
   goto skip;
   buttonlock:
   lcd.clear();
   lcd.print("Hoop reset");
-  lcd.setCursor(0, 1)
-  lcd.print("Press Again to Start")
+  lcd.setCursor(0, 1);
+  lcd.print("Press Again to Start");
   bpm = 0;
   ball_num = 0;
   t_last = 0;
-  delay(3000)//Very specifically for interupting this
-  while((digitalRead(ButtonPin) != 0))
+  delay(3000);//Very specifically for interupting this
+  while((digitalRead(ButtonPin) != LOW))
   {
     ;
   }
-
+  goto skip;
+  timeout:
+  lcd.clear();
+  lcd.print("Time's Up");
+  delay(3000);
+  while((digitalRead(ButtonPin) != LOW))
+  {
+    if (millis()%5000 == 0||millis()%5001 == 0||millis()%5002 == 0||millis()%5003 == 0||millis()%5004 == 0||millis()%5005 == 0){
+      lcd.clear();
+      lcd.print("Stats:");
+      lcd.setCursor(0, 1);
+      lcd.print(ball_num);
+      lcd.print(" Balls");
+    }
+    if (millis()%2500 == 0||millis()%2501 == 0||millis()%2502 == 0||millis()%2503 == 0||millis()%2504 == 0||millis()%2505 == 0){
+      lcd.clear();
+      lcd.print("Stats:");
+      lcd.setCursor(0, 1);
+      lcd.print(bpm);
+      lcd.print(" BPM");
+    }
+  }
+  lcd.clear();
+  lcd.print("Loading...");
+  bpm = 0;
+  ball_num = 0;
+  t_start = millis();
+  delay(3000);
+  lcd.clear();
   skip:
   ;
 }
-
-/*void loop() {
-  if (digitalRead(irSensorPin_0) == HIGH) {
-    Serial.println("Nothing detected");
-    Serial.print(currentState); //debugging
-    while (currentState == somethingIn) {
-      lcd.setCursor(0,0);
-      lcd.print("Nothing in");
-      currentState = nothingIn;
-    }
-    //
-  }
-  else if (digitalRead(irSensorPin_0) == LOW) {
-    Serial.println("Object detected");
-    Serial.print(currentState);
-    while (currentState == nothingIn) {
-      lcd.setCursor(0,0);
-      lcd.print("Something went in");
-      currentState = somethingIn;
-    }
-  }
-}*/
