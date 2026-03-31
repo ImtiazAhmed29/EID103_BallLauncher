@@ -28,7 +28,7 @@ int t_press_2 = 0;
 float ball_num=0;//Ball info variables
 double bpm;
 double bps;
-long V;
+double V;
 void setup() {
   Serial.begin(9600);
   pinMode(irSensorPin_0, INPUT);
